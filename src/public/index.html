@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Church Audio Pipeline — Review</title>
+  <meta name="description" content="Human review interface for the Church Audio Processing Pipeline. Inspect AI-proposed cuts, approve or reject segmentation decisions before audio editing begins." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:       #0d1117;
+      --bg-surface:    #161b22;
+      --bg-card:       #1c2230;
+      --bg-hover:      #21273a;
+      --border:        #30363d;
+      --border-bright: #484f58;
+      --text-primary:  #e6edf3;
+      --text-secondary:#8b949e;
+      --text-muted:    #6e7681;
+      --accent:        #58a6ff;
+      --accent-glow:   rgba(88,166,255,0.15);
+      --green:         #3fb950;
+      --green-bg:      rgba(63,185,80,0.1);
+      --red:           #f85149;
+      --red-bg:        rgba(248,81,73,0.1);
+      --yellow:        #d29922;
+      --yellow-bg:     rgba(210,153,34,0.1);
+      --purple:        #bc8cff;
+      --prayer-color:  #58a6ff;
+      --sermon-color:  #3fb950;
+      --cut-color:     #f85149;
+      --radius:        10px;
+      --shadow:        0 4px 32px rgba(0,0,0,0.5);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--text-primary);
+    }
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #58a6ff, #bc8cff);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .header-actions { display: flex; gap: 10px; }
+
+    /* ── Buttons ── */
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 7px 14px;
+      transition: all 0.18s ease;
+    }
+    .btn-primary   { background: var(--accent); color: #0d1117; }
+    .btn-primary:hover { background: #79baff; transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-glow); }
+    .btn-ghost     { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--border-bright); color: var(--text-primary); background: var(--bg-hover); }
+    .btn-danger    { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+    .btn-danger:hover { background: rgba(248,81,73,0.2); transform: translateY(-1px); }
+    .btn-success   { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+    .btn-success:hover { background: rgba(63,185,80,0.2); transform: translateY(-1px); }
+    .btn-sm { padding: 4px 10px; font-size: 0.78rem; }
+    button:disabled { opacity: 0.4; pointer-events: none; }
+
+    /* ── Main Layout ── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* ── Section Header ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    h1 { font-size: 1.5rem; font-weight: 700; }
+    h2 { font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── Status Badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-awaiting { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
+    .badge-no-split { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(88,166,255,0.3); }
+    .badge-approved { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+    .badge-rejected { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+    .badge-failed   { background: rgba(248,81,73,0.05); color: #a8505b; border: 1px solid rgba(248,81,73,0.2); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--border-bright); }
+    .job-card {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      cursor: pointer;
+    }
+    .job-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .job-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center;
+      padding: 5rem 2rem;
+      color: var(--text-secondary);
+    }
+    .empty-state .emoji { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state h2 { color: var(--text-primary); margin-bottom: 0.5rem; }
+
+    /* ── Detail Panel ── */
+    .detail-panel { display: none; }
+    .detail-panel.active { display: block; }
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .back-btn:hover { color: var(--text-primary); transform: none; }
+
+    /* ── Cuts List ── */
+    .cuts-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+    .cut-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .cut-item.type-prayer { border-left: 3px solid var(--prayer-color); }
+    .cut-item.type-sermon { border-left: 3px solid var(--sermon-color); }
+    .cut-item.type-cut    { border-left: 3px solid var(--cut-color); }
+    .cut-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1.1rem;
+      background: var(--bg-surface);
+      gap: 1rem;
+    }
+    .cut-type-prayer { color: var(--prayer-color); }
+    .cut-type-sermon { color: var(--sermon-color); }
+    .cut-type-cut    { color: var(--cut-color); }
+    .cut-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .cut-icon { font-size: 1rem; }
+    .cut-times {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      background: var(--bg-card);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    .cut-body { padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+    .reason-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+    .reason-text { font-size: 0.88rem; color: var(--text-primary); }
+    .context-box {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .cut-edit-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .cut-edit-row label { font-size: 0.78rem; color: var(--text-muted); }
+    .cut-edit-row input {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      padding: 5px 10px;
+      width: 90px;
+      transition: border-color 0.2s;
+    }
+    .cut-edit-row input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .cut-edit-row select {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.83rem;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    /* ── Review Actions ── */
+    .review-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .review-actions p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      flex: 1 1 200px;
+    }
+
+    /* ── No-Split Notice ── */
+    .notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      margin-bottom: 1.25rem;
+    }
+    .notice-info { background: var(--accent-glow); border: 1px solid rgba(88,166,255,0.3); color: var(--accent); }
+    .notice-warn { background: var(--yellow-bg); border: 1px solid rgba(210,153,34,0.3); color: var(--yellow); }
+
+    /* ── Toast ── */
+    #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
+    .toast {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1.25rem;
+      font-size: 0.88rem;
+      box-shadow: var(--shadow);
+      animation: slideIn 0.2s ease, fadeOut 0.3s ease 2.8s forwards;
+      max-width: 320px;
+    }
+    .toast-success { border-left: 3px solid var(--green); }
+    .toast-error   { border-left: 3px solid var(--red); }
+    .toast-info    { border-left: 3px solid var(--accent); }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; transform: translateX(100%); } }
+
+    /* ── Upload Zone ── */
+    .upload-section { margin-bottom: 2.5rem; }
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+    .upload-zone p { color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.88rem; }
+    .upload-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    #upload-input { display: none; }
+    .upload-progress {
+      display: none;
+      margin-top: 1rem;
+      background: var(--bg-surface);
+      border-radius: 4px;
+      height: 4px;
+      overflow: hidden;
+    }
+    .upload-progress-bar {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: var(--text-primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      main { padding: 1rem; }
+      .review-actions { flex-direction: column; }
+      .cut-header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">🎙</div>
+      Church Audio Pipeline
+    </div>
+    <div class="header-actions">
+      <button class="btn-ghost btn-sm" onclick="triggerManualCheck()">🔄 Trigger Watcher</button>
+      <button class="btn-primary btn-sm" onclick="uploadSection.scrollIntoView({behavior:'smooth'})">+ Upload</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Upload Section -->
+  <section class="upload-section" id="uploadSection">
+    <div class="section-header">
+      <h2>Upload Audio File</h2>
+    </div>
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon">🎵</div>
+      <strong>Drop audio file here or click to browse</strong>
+      <p>Supported: MP3, WAV, M4A, OGG &nbsp;·&nbsp; Max 500 MB</p>
+      <input type="file" id="upload-input" accept="audio/*" />
+    </div>
+    <div class="upload-progress" id="uploadProgress">
+      <div class="upload-progress-bar" id="uploadProgressBar"></div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- List Panel -->
+  <div id="listPanel">
+    <div class="section-header">
+      <h2>Pending Review <span id="pendingCount" style="color:var(--text-muted);font-weight:400"></span></h2>
+      <button class="btn-ghost btn-sm" onclick="loadPendingJobs()">↻ Refresh</button>
+    </div>
+    <div id="jobsList"></div>
+  </div>
+
+  <!-- Detail Panel -->
+  <div id="detailPanel" class="detail-panel">
+    <button class="back-btn" onclick="showListPanel()">← Back to pending jobs</button>
+    <div id="detailContent"></div>
+  </div>
+
+</main>
+
+<div id="toast-container"></div>
+
+<script>
+  // ─── State ───────────────────────────────────────────────────────────────
+  let currentJob = null;
+  let editedCuts = [];
+
+  // ─── Toast ───────────────────────────────────────────────────────────────
+  function toast(msg, type = 'info') {
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+  }
+
+  // ─── API helpers ─────────────────────────────────────────────────────────
+  async function apiFetch(url, opts = {}) {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', ...opts.headers },
+      ...opts,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  }
+
+  // ─── List Panel ──────────────────────────────────────────────────────────
+  async function loadPendingJobs() {
+    const list = document.getElementById('jobsList');
+    list.innerHTML = '<div style="color:var(--text-muted);padding:2rem 0">Loading… <span class="spinner"></span></div>';
+    try {
+      const data = await apiFetch('/api/review/pending');
+      const jobs = data.jobs || [];
+      document.getElementById('pendingCount').textContent = jobs.length > 0 ? `(${jobs.length})` : '';
+
+      if (jobs.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="emoji">✅</div>
+            <h2>No jobs awaiting review</h2>
+            <p>Upload an audio file or wait for the scheduled Drive watcher to pick one up.</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = jobs.map(job => `
+        <div class="card job-card" onclick="openJob('${job.jobId}')">
+          <div class="job-card-header">
+            <div>
+              <span style="font-weight:600;font-size:0.95rem">${escapeHtml(job.sourceFile.split(/[\\/]/).pop())}</span>
+              <div class="job-meta">Job ID: ${job.jobId} &nbsp;·&nbsp; ${formatDate(job.updatedAt)}</div>
+            </div>
+            <span class="badge ${job.status === 'awaiting_review' ? 'badge-awaiting' : 'badge-no-split'}">
+              ${job.status === 'awaiting_review' ? '⏳ Awaiting Review' : '📄 Trim Only'}
+            </span>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+            ${(job.proposedCuts || []).map(c => `
+              <span style="font-size:0.78rem;padding:2px 8px;border-radius:12px;background:${cutBg(c.type)};color:${cutColor(c.type)}">
+                ${cutEmoji(c.type)} ${c.type}
+              </span>`).join('')}
+          </div>
+          ${job.status === 'no_split_needed' ? `
+            <div class="notice notice-info" style="margin:0">
+              ℹ️ No prayer/sermon boundary detected — showing trim-only cuts.
+            </div>` : ''}
+        </div>`).join('');
+    } catch (err) {
+      list.innerHTML = `<div class="notice notice-warn" style="margin:0">⚠️ Failed to load jobs: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  // ─── Open Job Detail ──────────────────────────────────────────────────────
+  async function openJob(jobId) {
+    document.getElementById('listPanel').style.display = 'none';
+    const panel = document.getElementById('detailPanel');
+    panel.classList.add('active');
+    document.getElementById('detailContent').innerHTML = '<div style="color:var(--text-muted);padding:2rem 0">Loading… <span class="spinner"></span></div>';
+
+    try {
+      const data = await apiFetch(`/api/review/${jobId}`);
+      currentJob = data.job;
+      editedCuts = JSON.parse(JSON.stringify(currentJob.proposedCuts || []));
+      renderDetail();
+    } catch (err) {
+      document.getElementById('detailContent').innerHTML = `<div class="notice notice-warn">⚠️ ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  function showListPanel() {
+    document.getElementById('detailPanel').classList.remove('active');
+    document.getElementById('listPanel').style.display = '';
+    currentJob = null;
+    editedCuts = [];
+    loadPendingJobs();
+  }
+
+  // ─── Render Detail ────────────────────────────────────────────────────────
+  function renderDetail() {
+    const job = currentJob;
+    const filename = job.sourceFile.split(/[\\/]/).pop();
+    const noSplit = job.status === 'no_split_needed';
+
+    const cutsHtml = (editedCuts || []).map((cut, i) => `
+      <div class="cut-item type-${cut.type}" id="cut-${i}">
+        <div class="cut-header">
+          <div class="cut-label cut-type-${cut.type}">
+            <span class="cut-icon">${cutEmoji(cut.type)}</span>
+            <span style="text-transform:capitalize">${cut.type}</span>
+          </div>
+          <span class="cut-times">${formatTime(cut.start)} → ${formatTime(cut.end)}</span>
+        </div>
+        <div class="cut-body">
+          <div>
+            <div class="reason-label">Reason</div>
+            <div class="reason-text">${escapeHtml(cut.reason)}</div>
+          </div>
+          ${cut.context ? `
+          <div>
+            <div class="reason-label">Transcript Context (±5 s)</div>
+            <div class="context-box">${escapeHtml(cut.context)}</div>
+          </div>` : ''}
+          <div>
+            <div class="reason-label">Edit Timestamps or Type</div>
+            <div class="cut-edit-row">
+              <label>Start (s)</label>
+              <input type="number" step="0.01" value="${cut.start}" oninput="updateCut(${i},'start',this.value)" />
+              <label>End (s)</label>
+              <input type="number" step="0.01" value="${cut.end}" oninput="updateCut(${i},'end',this.value)" />
+              <label>Type</label>
+              <select onchange="updateCutType(${i},this.value)">
+                <option value="prayer" ${cut.type==='prayer'?'selected':''}>prayer</option>
+                <option value="sermon" ${cut.type==='sermon'?'selected':''}>sermon</option>
+                <option value="cut"    ${cut.type==='cut'?'selected':''}>cut (remove)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('detailContent').innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem">
+        <div>
+          <h2>${escapeHtml(filename)}</h2>
+          <div class="job-meta">Job ID: ${job.jobId} &nbsp;·&nbsp; Updated ${formatDate(job.updatedAt)}</div>
+        </div>
+        <span class="badge ${noSplit ? 'badge-no-split' : 'badge-awaiting'}">
+          ${noSplit ? '📄 Trim Only (No Boundary)' : '⏳ Awaiting Review'}
+        </span>
+      </div>
+
+      ${noSplit ? `
+      <div class="notice notice-info">
+        ℹ️ <strong>No prayer/sermon boundary found.</strong> This is expected on some Sundays. The LLM could not locate a clear "Turn your Bibles to…" transition. You can still approve trim cuts below, or reject the job entirely.
+      </div>` : ''}
+
+      <div class="card" style="margin-bottom:1.5rem">
+        <h3 style="margin-bottom:1rem">Proposed Cuts — ${editedCuts.length} segment${editedCuts.length !== 1 ? 's' : ''}</h3>
+        ${editedCuts.length === 0 ? '<p style="color:var(--text-muted);font-size:0.88rem">No cuts proposed.</p>' : `<div class="cuts-list">${cutsHtml}</div>`}
+      </div>
+
+      <div class="review-actions">
+        <p>Approve to run FFmpeg editing with these cuts, or reject to retain the raw file untouched.</p>
+        <button class="btn-danger" onclick="rejectJob()">✕ Reject</button>
+        <button class="btn-success" id="approveBtn" onclick="approveJob()">✓ Approve & Begin Edit</button>
+      </div>
+    `;
+  }
+
+  function updateCut(i, field, val) {
+    editedCuts[i][field] = parseFloat(val);
+  }
+  function updateCutType(i, val) {
+    editedCuts[i].type = val;
+    renderDetail();
+  }
+
+  // ─── Approve / Reject ─────────────────────────────────────────────────────
+  async function approveJob() {
+    const btn = document.getElementById('approveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Approving…';
+    try {
+      await apiFetch(`/api/review/${currentJob.jobId}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ reviewedCuts: editedCuts }),
+      });
+      toast('Job approved and enqueued for editing!', 'success');
+      showListPanel();
+    } catch (err) {
+      toast(`Approval failed: ${err.message}`, 'error');
+      btn.disabled = false;
+      btn.innerHTML = '✓ Approve & Begin Edit';
+    }
+  }
+
+  async function rejectJob() {
+    const reason = prompt('Optional: Provide a reason for rejection.');
+    if (reason === null) return; // user cancelled
+    try {
+      await apiFetch(`/api/review/${currentJob.jobId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      });
+      toast('Job rejected. Raw file retained.', 'info');
+      showListPanel();
+    } catch (err) {
+      toast(`Rejection failed: ${err.message}`, 'error');
+    }
+  }
+
+  // ─── Upload ───────────────────────────────────────────────────────────────
+  const uploadZone = document.getElementById('uploadZone');
+  const uploadInput = document.getElementById('upload-input');
+
+  uploadZone.addEventListener('click', () => uploadInput.click());
+  uploadInput.addEventListener('change', () => {
+    if (uploadInput.files[0]) doUpload(uploadInput.files[0]);
+  });
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) doUpload(e.dataTransfer.files[0]);
+  });
+
+  async function doUpload(file) {
+    const progressEl  = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('uploadProgressBar');
+    progressEl.style.display = 'block';
+    progressBar.style.width = '0%';
+
+    const formData = new FormData();
+    formData.append('audio', file);
+
+    try {
+      // Animate progress bar (fake progress while uploading)
+      let fakeProgress = 0;
+      const tick = setInterval(() => {
+        fakeProgress = Math.min(fakeProgress + Math.random() * 12, 85);
+        progressBar.style.width = fakeProgress + '%';
+      }, 300);
+
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      clearInterval(tick);
+      progressBar.style.width = '100%';
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+      toast(`Uploaded! Job ${data.jobId} — transcription queued.`, 'success');
+      setTimeout(() => { progressEl.style.display = 'none'; progressBar.style.width = '0%'; }, 1500);
+      uploadInput.value = '';
+    } catch (err) {
+      progressEl.style.display = 'none';
+      toast(`Upload failed: ${err.message}`, 'error');
+    }
+  }
+
+  // ─── Manual Watcher ───────────────────────────────────────────────────────
+  async function triggerManualCheck() {
+    try {
+      const data = await apiFetch('/api/watcher/check', { method: 'POST' });
+      toast(`Watcher check complete — ${data.foundFiles || 0} file(s) found.`, 'info');
+      loadPendingJobs();
+    } catch (err) {
+      toast(`Watcher failed: ${err.message}`, 'error');
+    }
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────
+  function escapeHtml(str = '') {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function formatTime(s = 0) {
+    const m = Math.floor(s / 60);
+    const sec = (s % 60).toFixed(1).padStart(4, '0');
+    return `${m}:${sec}`;
+  }
+  function formatDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString();
+  }
+  function cutColor(type) {
+    return type === 'prayer' ? 'var(--prayer-color)' : type === 'sermon' ? 'var(--sermon-color)' : 'var(--cut-color)';
+  }
+  function cutBg(type) {
+    return type === 'prayer' ? 'rgba(88,166,255,0.1)' : type === 'sermon' ? 'rgba(63,185,80,0.1)' : 'rgba(248,81,73,0.1)';
+  }
+  function cutEmoji(type) {
+    return type === 'prayer' ? '🙏' : type === 'sermon' ? '📖' : '✂️';
+  }
+
+  // ─── Init ─────────────────────────────────────────────────────────────────
+  loadPendingJobs();
+</script>
+</body>
+</html>
