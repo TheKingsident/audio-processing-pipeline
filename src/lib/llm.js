@@ -2,9 +2,19 @@ import { config } from '../config/index.js';
 import { logger } from './logger.js';
 
 export async function segmentTranscriptWithLLM(transcriptWords) {
-  if (process.env.USE_MOCK_SEGMENTATION === 'true' || (!config.llm.anthropicApiKey && !config.llm.openaiApiKey)) {
+  if (process.env.USE_MOCK_SEGMENTATION === 'true') {
     logger.info('Using mock LLM segmentation');
     return mockSegmentation(transcriptWords);
+  }
+
+  const hasKey = Boolean(
+    config.llm.moonshotApiKey ||
+    config.llm.anthropicApiKey ||
+    config.llm.openaiApiKey
+  );
+
+  if (!hasKey) {
+    throw new Error('LLM Segmentation error: Real mode active but no API key configured in .env (Set MOONSHOT_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY).');
   }
 
   const formattedTranscript = transcriptWords
@@ -71,29 +81,61 @@ Return ONLY a clean JSON object with this exact structure:
 }
 
 async function callLLMApi(prompt) {
-  if (config.llm.anthropicApiKey) {
+  // 1. Check for Moonshot AI Key or explicitly set Moonshot provider
+  if (config.llm.moonshotApiKey || config.llm.provider === 'moonshot') {
+    logger.info('Calling Moonshot AI (Kimi) for transcript segmentation');
+    const OpenAI = (await import('openai')).default;
+    const client = new OpenAI({
+      apiKey: config.llm.moonshotApiKey || config.llm.openaiApiKey,
+      baseURL: config.llm.baseUrl || 'https://api.moonshot.cn/v1',
+    });
+    const model = config.llm.model || 'moonshot-v1-32k';
+
+    const response = await client.chat.completions.create({
+      model,
+      temperature: 0.1,
+      messages: [
+        { role: 'system', content: 'You are a precise audio segmentation assistant. Respond ONLY with valid JSON.' },
+        { role: 'user', content: prompt }
+      ],
+    });
+    return response.choices[0].message.content;
+  }
+
+  // 2. Check for Anthropic Key
+  if (config.llm.anthropicApiKey || config.llm.provider === 'anthropic') {
+    logger.info('Calling Anthropic Claude for transcript segmentation');
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
     const anthropic = new Anthropic({ apiKey: config.llm.anthropicApiKey });
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: config.llm.model || 'claude-3-5-sonnet-20241022',
       max_tokens: 3000,
       temperature: 0.1,
       messages: [{ role: 'user', content: prompt }],
     });
     return response.content[0].text;
-  } else if (config.llm.openaiApiKey) {
+  }
+
+  // 3. Check for OpenAI Key or custom OpenAI-compatible endpoint
+  if (config.llm.openaiApiKey || config.llm.baseUrl) {
+    logger.info('Calling OpenAI-compatible API for transcript segmentation');
     const OpenAI = (await import('openai')).default;
-    const openai = new OpenAI({ apiKey: config.llm.openaiApiKey });
+    const opts = { apiKey: config.llm.openaiApiKey };
+    if (config.llm.baseUrl) opts.baseURL = config.llm.baseUrl;
+
+    const openai = new OpenAI(opts);
+    const model = config.llm.model || 'gpt-4o';
+
     const response = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model,
       temperature: 0.1,
       response_format: { type: 'json_object' },
       messages: [{ role: 'user', content: prompt }],
     });
     return response.choices[0].message.content;
-  } else {
-    throw new Error('No LLM API keys provided');
   }
+
+  throw new Error('No valid LLM API provider or API key found');
 }
 
 export function parseAndValidateLLMOutput(text, transcriptWords = []) {

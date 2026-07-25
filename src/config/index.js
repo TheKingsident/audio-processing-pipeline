@@ -11,6 +11,7 @@ export const config = {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
     password: process.env.REDIS_PASSWORD || undefined,
+    tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
   },
 
   db: {
@@ -43,8 +44,12 @@ export const config = {
   },
 
   llm: {
+    provider: process.env.LLM_PROVIDER || '', // 'moonshot' | 'anthropic' | 'openai' | 'custom'
+    moonshotApiKey: process.env.MOONSHOT_API_KEY || '',
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
     openaiApiKey: process.env.OPENAI_API_KEY || '',
+    baseUrl: process.env.LLM_BASE_URL || '',
+    model: process.env.LLM_MODEL || '',
   },
 
   logging: {

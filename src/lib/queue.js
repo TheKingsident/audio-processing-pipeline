@@ -1,15 +1,20 @@
 import { Queue } from 'bullmq';
-import { IORedis } from 'ioredis';
+import Redis from 'ioredis';
 import { config } from '../config/index.js';
 import { logger } from './logger.js';
 
-export const redisConnection = new IORedis({
+const redisOpts = {
   host: config.redis.host,
   port: config.redis.port,
-  password: config.redis.password,
+  password: config.redis.password || undefined,
   maxRetriesPerRequest: null,
   lazyConnect: true,
-});
+};
+if (config.redis.tls) {
+  redisOpts.tls = config.redis.tls;
+}
+
+export const redisConnection = new Redis(redisOpts);
 
 redisConnection.on('error', (err) => {
   logger.warn({ err: err.message }, 'Redis connection error (queue will retry or mock mode can be used)');
