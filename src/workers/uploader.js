@@ -2,11 +2,25 @@ import { jobsDb } from '../db/jobs.js';
 import { logger } from '../lib/logger.js';
 import { uploadToDrive, deleteFromDrive } from '../lib/drive.js';
 import { config } from '../config/index.js';
-import { existsSync, unlinkSync, rmSync } from 'fs';
-import { dirname } from 'path';
+import { existsSync, unlinkSync } from 'fs';
 
 export async function processUploadAndCleanup(jobId, localOutputFiles) {
-  logger.info({ jobId, localOutputFiles }, 'Starting Drive upload step');
+  const isDriveEnabled = config.google.enableDriveUpload && config.google.finalFolderId;
+
+  if (!isDriveEnabled) {
+    logger.info({ jobId, localOutputFiles }, 'Local Storage Mode active (ENABLE_DRIVE_UPLOAD=false). Preserving clips on disk.');
+
+    jobsDb.updateJob(jobId, {
+      status: 'done',
+      outputFiles: localOutputFiles,
+    });
+
+    logger.info({ jobId, localOutputFiles }, 'Audio editing complete! Final files saved locally in ./src/temp/processed/');
+    return localOutputFiles;
+  }
+
+  // ── Drive Upload Mode (Production) ──────────────────────────────────────
+  logger.info({ jobId, localOutputFiles }, 'Drive Upload Mode active. Uploading processed files to Google Drive...');
 
   jobsDb.updateJob(jobId, { status: 'uploading' });
 
@@ -37,7 +51,6 @@ export async function processUploadAndCleanup(jobId, localOutputFiles) {
       } catch (e) {}
     }
 
-    // Delete raw source from Drive if sourceFile was a Drive ID or tracked
     if (jobRecord && jobRecord.sourceFile && jobRecord.sourceFile.startsWith('drive_')) {
       const driveFileId = jobRecord.sourceFile.replace('drive_', '');
       try {

@@ -11,7 +11,8 @@ export async function transcribeWithWhisperX(audioPath, onProgress) {
   }
 
   const tempDir = mkdtempSync(join(tmpdir(), 'whisperx-'));
-  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+  const pythonCmd = process.env.WHISPERX_PYTHON
+    || (process.platform === 'win32' ? 'python' : 'python3');
 
   const args = [
     '-m', 'whisperx',
@@ -19,7 +20,6 @@ export async function transcribeWithWhisperX(audioPath, onProgress) {
     '--output_format', 'json',
     '--output_dir', tempDir,
     '--language', 'en',
-    '--word_timestamps', 'True',
   ];
 
   return new Promise((resolve, reject) => {

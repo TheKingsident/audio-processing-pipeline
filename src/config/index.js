@@ -8,10 +8,11 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
 
   redis: {
+    url: process.env.REDIS_URL || undefined,
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
     password: process.env.REDIS_PASSWORD || undefined,
-    tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
+    tls: process.env.REDIS_TLS === 'true' || (process.env.REDIS_HOST && process.env.REDIS_HOST.includes('upstash.io')),
   },
 
   db: {
@@ -37,6 +38,7 @@ export const config = {
   },
 
   google: {
+    enableDriveUpload: process.env.ENABLE_DRIVE_UPLOAD === 'true',
     serviceAccountKeyPath: process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH || '',
     toProcessFolderId: process.env.GOOGLE_DRIVE_TO_PROCESS_FOLDER_ID || '',
     inProgressFolderId: process.env.GOOGLE_DRIVE_IN_PROGRESS_FOLDER_ID || '',

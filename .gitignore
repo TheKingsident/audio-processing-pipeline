@@ -1,8 +1,10 @@
 docs/church-audio-pipeline-spec.md
 .env
 node_modules/
+.venv/
 dump.rdb
 data/*.db
 data/*.db-shm
 data/*.db-wal
 *.mp3
+/credentials

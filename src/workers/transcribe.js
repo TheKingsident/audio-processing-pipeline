@@ -3,7 +3,7 @@ import { config } from '../config/index.js';
 import { logger } from '../lib/logger.js';
 import { jobsDb } from '../db/jobs.js';
 import { transcribeWithWhisperX } from '../lib/whisper.js';
-import { redisConnection, enqueueSegmentationJob } from '../lib/queue.js';
+import { getRedisConfig, enqueueSegmentationJob } from '../lib/queue.js';
 
 export async function processTranscriptionJob(job) {
   const { jobId, filePath } = job.data;
@@ -27,10 +27,9 @@ export async function processTranscriptionJob(job) {
     });
 
     await enqueueSegmentationJob(jobId);
-    logger.info({ jobId, wordCount: transcriptWords.length }, 'Transcription completed successfully');
-    return { wordCount: transcriptWords.length };
+    logger.info({ jobId }, 'Transcription complete. Enqueued for segmentation.');
   } catch (err) {
-    logger.error({ jobId, err: err.message }, 'Transcription worker failed');
+    logger.error({ jobId, err: err.message }, 'Transcription failed');
     jobsDb.updateJob(jobId, {
       status: 'failed',
       error: `Transcription error: ${err.message}`,
@@ -41,7 +40,7 @@ export async function processTranscriptionJob(job) {
 
 export function createTranscriptionWorker() {
   return new Worker(config.queue.transcription, processTranscriptionJob, {
-    connection: redisConnection,
+    connection: getRedisConfig(),
     concurrency: config.queue.concurrency,
   });
 }

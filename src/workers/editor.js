@@ -4,7 +4,7 @@ import { logger } from '../lib/logger.js';
 import { jobsDb } from '../db/jobs.js';
 import { processAudioCuts } from '../lib/ffmpeg.js';
 import { processUploadAndCleanup } from './uploader.js';
-import { redisConnection } from '../lib/queue.js';
+import { getRedisConfig } from '../lib/queue.js';
 import { join } from 'path';
 
 export async function processEditJob(job) {
@@ -42,7 +42,7 @@ export async function processEditJob(job) {
 
 export function createEditUploadWorker() {
   return new Worker(config.queue.editUpload, processEditJob, {
-    connection: redisConnection,
+    connection: getRedisConfig(),
     concurrency: 1, // Concurrency 1 to prevent FFmpeg resource exhaustion
   });
 }

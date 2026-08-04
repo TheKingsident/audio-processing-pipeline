@@ -3,7 +3,7 @@ import { config } from '../config/index.js';
 import { logger } from '../lib/logger.js';
 import { jobsDb } from '../db/jobs.js';
 import { segmentTranscriptWithLLM } from '../lib/llm.js';
-import { redisConnection } from '../lib/queue.js';
+import { getRedisConfig } from '../lib/queue.js';
 
 export async function processSegmentationJob(job) {
   const { jobId } = job.data;
@@ -41,7 +41,7 @@ export async function processSegmentationJob(job) {
 
 export function createSegmentationWorker() {
   return new Worker(config.queue.segmentation, processSegmentationJob, {
-    connection: redisConnection,
+    connection: getRedisConfig(),
     concurrency: config.queue.concurrency,
   });
 }

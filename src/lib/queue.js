@@ -3,33 +3,46 @@ import Redis from 'ioredis';
 import { config } from '../config/index.js';
 import { logger } from './logger.js';
 
-const redisOpts = {
-  host: config.redis.host,
-  port: config.redis.port,
-  password: config.redis.password || undefined,
-  maxRetriesPerRequest: null,
-  lazyConnect: true,
-};
-if (config.redis.tls) {
-  redisOpts.tls = config.redis.tls;
+export function getRedisConfig() {
+  const commonOpts = {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    keepAlive: 10000,
+    family: 4,
+  };
+
+  if (config.redis.url) {
+    const isTls = config.redis.url.startsWith('rediss://');
+    return new Redis(config.redis.url, {
+      ...commonOpts,
+      tls: isTls ? {} : undefined,
+    });
+  }
+
+  const redisOpts = {
+    host: config.redis.host,
+    port: config.redis.port,
+    password: config.redis.password || undefined,
+    ...commonOpts,
+  };
+
+  if (config.redis.tls) {
+    redisOpts.tls = {};
+  }
+
+  return new Redis(redisOpts);
 }
 
-export const redisConnection = new Redis(redisOpts);
-
-redisConnection.on('error', (err) => {
-  logger.warn({ err: err.message }, 'Redis connection error (queue will retry or mock mode can be used)');
-});
-
 export const transcriptionQueue = new Queue(config.queue.transcription, {
-  connection: redisConnection,
+  connection: getRedisConfig(),
 });
 
 export const segmentationQueue = new Queue(config.queue.segmentation, {
-  connection: redisConnection,
+  connection: getRedisConfig(),
 });
 
 export const editUploadQueue = new Queue(config.queue.editUpload, {
-  connection: redisConnection,
+  connection: getRedisConfig(),
 });
 
 export async function enqueueTranscriptionJob(jobId, filePath) {
