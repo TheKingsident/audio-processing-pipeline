@@ -17,9 +17,8 @@ export async function segmentTranscriptWithLLM(transcriptWords) {
     throw new Error('LLM Segmentation error: Real mode active but no API key configured in .env (Set MOONSHOT_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY).');
   }
 
-  const formattedTranscript = transcriptWords
-    .map(w => `[${w.start.toFixed(2)}-${w.end.toFixed(2)}] ${w.word}`)
-    .join(' ');
+  // Group words into ~5-second chunks/sentences to reduce token count by ~80%
+  const formattedTranscript = groupWordsIntoChunks(transcriptWords);
 
   const prompt = buildPrompt(formattedTranscript);
 
@@ -27,16 +26,56 @@ export async function segmentTranscriptWithLLM(transcriptWords) {
     const rawOutput = await callLLMApi(prompt);
     return parseAndValidateLLMOutput(rawOutput, transcriptWords);
   } catch (err) {
+    const isRateLimit = err.message.includes('429') || err.message.includes('rate limit') || err.message.includes('TPD');
+    if (isRateLimit || process.env.ALLOW_FALLBACK === 'true') {
+      logger.warn({ err: err.message }, 'LLM rate limit or error reached. Falling back to rule-based segmentation.');
+      return mockSegmentation(transcriptWords);
+    }
+
     logger.warn({ err: err.message }, 'First LLM segmentation attempt failed. Retrying once with strict instructions...');
     try {
       const strictPrompt = `${prompt}\n\nCRITICAL: Your previous response was invalid. Return ONLY a valid, parseable JSON object matching the exact schema requested. Do not include markdown codeblocks or any non-JSON text.`;
       const rawOutputRetry = await callLLMApi(strictPrompt);
       return parseAndValidateLLMOutput(rawOutputRetry, transcriptWords);
     } catch (retryErr) {
+      if (retryErr.message.includes('429') || retryErr.message.includes('rate limit') || process.env.ALLOW_FALLBACK === 'true') {
+        logger.warn({ err: retryErr.message }, 'LLM rate limit reached during retry. Falling back to rule-based segmentation.');
+        return mockSegmentation(transcriptWords);
+      }
       logger.error({ retryErr: retryErr.message }, 'LLM segmentation retry failed');
       throw new Error(`LLM segmentation failed after retry: ${retryErr.message}`);
     }
   }
+}
+
+/**
+ * Groups individual word objects into ~5 second timestamped text chunks
+ * to dramatically reduce token count sent to LLM APIs.
+ */
+function groupWordsIntoChunks(transcriptWords, chunkDurationSec = 5.0) {
+  if (!transcriptWords || transcriptWords.length === 0) return '';
+  const chunks = [];
+  let currentChunkWords = [];
+  let chunkStart = transcriptWords[0].start;
+  let chunkEnd = transcriptWords[0].end;
+
+  for (const w of transcriptWords) {
+    if (currentChunkWords.length > 0 && (w.start - chunkStart) >= chunkDurationSec) {
+      chunks.push(`[${chunkStart.toFixed(2)}-${chunkEnd.toFixed(2)}] ${currentChunkWords.join(' ')}`);
+      currentChunkWords = [w.word];
+      chunkStart = w.start;
+      chunkEnd = w.end;
+    } else {
+      currentChunkWords.push(w.word);
+      chunkEnd = w.end;
+    }
+  }
+
+  if (currentChunkWords.length > 0) {
+    chunks.push(`[${chunkStart.toFixed(2)}-${chunkEnd.toFixed(2)}] ${currentChunkWords.join(' ')}`);
+  }
+
+  return chunks.join('\n');
 }
 
 function buildPrompt(formattedTranscript) {
@@ -87,13 +126,13 @@ async function callLLMApi(prompt) {
     const OpenAI = (await import('openai')).default;
     const client = new OpenAI({
       apiKey: config.llm.moonshotApiKey || config.llm.openaiApiKey,
-      baseURL: config.llm.baseUrl || 'https://api.moonshot.cn/v1',
+      baseURL: config.llm.baseUrl || 'https://api.moonshot.ai/v1',
     });
-    const model = config.llm.model || 'moonshot-v1-32k';
+    const model = config.llm.model || 'kimi-k2.6';
 
     const response = await client.chat.completions.create({
       model,
-      temperature: 0.1,
+      temperature: 1,
       messages: [
         { role: 'system', content: 'You are a precise audio segmentation assistant. Respond ONLY with valid JSON.' },
         { role: 'user', content: prompt }

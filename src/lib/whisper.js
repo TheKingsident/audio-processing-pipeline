@@ -1,8 +1,70 @@
-import { spawn } from 'child_process';
-import { readFileSync, rmSync, mkdtempSync, readdirSync, existsSync } from 'fs';
-import { join } from 'path';
+import { spawn, execSync } from 'child_process';
+import { readFileSync, rmSync, mkdtempSync, readdirSync, existsSync, copyFileSync } from 'fs';
+import { join, dirname, resolve } from 'path';
 import { tmpdir } from 'os';
 import { logger } from './logger.js';
+
+function getPythonCmd() {
+  let cmd = process.env.WHISPERX_PYTHON;
+  if (!cmd) {
+    const venvPython = process.platform === 'win32'
+      ? join(process.cwd(), '.venv', 'Scripts', 'python.exe')
+      : join(process.cwd(), '.venv', 'bin', 'python');
+    if (existsSync(venvPython)) {
+      return venvPython;
+    }
+    return process.platform === 'win32' ? 'python' : 'python3';
+  }
+  if (cmd.includes('/') || cmd.includes('\\')) {
+    return resolve(process.cwd(), cmd);
+  }
+  return cmd;
+}
+
+/**
+ * Attempts to locate ffmpeg by checking:
+ *  1. imageio-ffmpeg pip package (bundles ffmpeg.exe)
+ *  2. Already on system PATH
+ * Returns the directory containing ffmpeg.exe, or null if not found.
+ */
+function findFfmpegDir() {
+  const pythonCmd = getPythonCmd();
+
+  // Try imageio-ffmpeg first (pip-installable, bundles ffmpeg binary)
+  try {
+    const ffmpegPath = execSync(
+      `"${pythonCmd}" -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())"`,
+      { encoding: 'utf-8', timeout: 10000 }
+    ).trim();
+    if (ffmpegPath && existsSync(ffmpegPath)) {
+      const dir = dirname(ffmpegPath);
+      const exeTarget = join(dir, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
+      if (!existsSync(exeTarget)) {
+        try {
+          copyFileSync(ffmpegPath, exeTarget);
+        } catch {}
+      }
+      logger.info({ ffmpegPath, ffmpegDir: dir }, 'Found ffmpeg via imageio-ffmpeg');
+      return dir;
+    }
+  } catch {
+    // imageio-ffmpeg not installed, continue
+  }
+
+  // Check if ffmpeg is already on PATH
+  try {
+    const whichCmd = process.platform === 'win32' ? 'where.exe ffmpeg' : 'which ffmpeg';
+    const result = execSync(whichCmd, { encoding: 'utf-8', timeout: 5000 }).trim().split(/\r?\n/)[0];
+    if (result && existsSync(result)) {
+      logger.info({ ffmpegPath: result }, 'Found ffmpeg on system PATH');
+      return dirname(result);
+    }
+  } catch {
+    // ffmpeg not on PATH
+  }
+
+  return null;
+}
 
 export async function transcribeWithWhisperX(audioPath, onProgress) {
   if (process.env.USE_MOCK_TRANSCRIPTION === 'true') {
@@ -11,8 +73,7 @@ export async function transcribeWithWhisperX(audioPath, onProgress) {
   }
 
   const tempDir = mkdtempSync(join(tmpdir(), 'whisperx-'));
-  const pythonCmd = process.env.WHISPERX_PYTHON
-    || (process.platform === 'win32' ? 'python' : 'python3');
+  const pythonCmd = getPythonCmd();
 
   const args = [
     '-m', 'whisperx',
@@ -22,9 +83,25 @@ export async function transcribeWithWhisperX(audioPath, onProgress) {
     '--language', 'en',
   ];
 
+  // Build spawn environment with ffmpeg on PATH and Offline Mode enabled
+  const spawnEnv = {
+    ...process.env,
+    HF_HUB_OFFLINE: process.env.HF_HUB_OFFLINE || '1',
+    TRANSFORMERS_OFFLINE: process.env.TRANSFORMERS_OFFLINE || '1',
+    HF_HUB_DISABLE_SYMLINKS_WARNING: '1',
+  };
+  const ffmpegDir = findFfmpegDir();
+  if (ffmpegDir) {
+    const sep = process.platform === 'win32' ? ';' : ':';
+    spawnEnv.PATH = `${ffmpegDir}${sep}${spawnEnv.PATH || ''}`;
+    logger.info({ ffmpegDir }, 'Injecting ffmpeg directory into subprocess PATH');
+  } else {
+    logger.warn('ffmpeg not found. WhisperX requires ffmpeg to decode audio. Install it via: pip install imageio-ffmpeg  OR  winget install Gyan.FFmpeg');
+  }
+
   return new Promise((resolve, reject) => {
     logger.info({ audioPath, tempDir }, 'Spawning WhisperX subprocess');
-    const proc = spawn(pythonCmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const proc = spawn(pythonCmd, args, { stdio: ['ignore', 'pipe', 'pipe'], env: spawnEnv });
 
     let stdout = '';
     let stderr = '';
