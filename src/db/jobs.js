@@ -55,6 +55,12 @@ export class JobStore {
       CREATE INDEX IF NOT EXISTS idx_jobs_status     ON jobs(status);
       CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at DESC);
     `);
+
+    // Migrate pre-existing databases: add progress column if missing
+    const cols = this.db.prepare(`PRAGMA table_info(jobs)`).all().map(c => c.name);
+    if (!cols.includes('progress')) {
+      this.db.exec(`ALTER TABLE jobs ADD COLUMN progress INTEGER DEFAULT 0`);
+    }
   }
 
   getDb() {
@@ -114,6 +120,7 @@ export class JobStore {
     const allowed = {
       sourceFile:    'source_file',
       status:        'status',
+      progress:      'progress',
       boundaryFound: 'boundary_found',
       transcript:    'transcript',
       proposedCuts:  'proposed_cuts',
@@ -157,6 +164,7 @@ export class JobStore {
       jobId:        row.job_id,
       sourceFile:   row.source_file,
       status:       row.status,
+      progress:     row.progress ?? 0,
       boundaryFound: Boolean(row.boundary_found),
       transcript:   parse(row.transcript),
       proposedCuts: parse(row.proposed_cuts),

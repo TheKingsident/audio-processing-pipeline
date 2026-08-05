@@ -14,15 +14,21 @@ export async function processTranscriptionJob(job) {
     throw new Error(`Job ${jobId} not found in database`);
   }
 
-  jobsDb.updateJob(jobId, { status: 'transcribing' });
+  jobsDb.updateJob(jobId, { status: 'transcribing', progress: 0 });
 
   try {
+    let lastProgress = -1;
     const transcriptWords = await transcribeWithWhisperX(filePath, (progress) => {
       job.updateProgress(progress).catch(() => {});
+      if (progress !== lastProgress) {
+        lastProgress = progress;
+        jobsDb.updateJob(jobId, { progress });
+      }
     });
 
     jobsDb.updateJob(jobId, {
       status: 'segmenting',
+      progress: 100,
       transcript: transcriptWords,
     });
 

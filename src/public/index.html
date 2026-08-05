@@ -359,6 +359,60 @@
       transition: width 0.3s ease;
     }
 
+    /* ── Pipeline Activity Status Bars ── */
+    .pipeline-section { margin-bottom: 2.5rem; display: none; }
+    .pipeline-section.active { display: block; }
+    .pipeline-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .pipeline-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.6rem;
+    }
+    .pipeline-item-name { font-weight: 600; font-size: 0.9rem; }
+    .pipeline-item-stage {
+      font-size: 0.78rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .pipeline-item-stage.failed { color: var(--red); }
+    .status-bar {
+      background: var(--bg-surface);
+      border-radius: 4px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .status-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+    .status-bar-fill.indeterminate {
+      width: 40%;
+      animation: indeterminate 1.4s ease-in-out infinite;
+    }
+    .status-bar-fill.failed { background: var(--red); width: 100%; animation: none; }
+    @keyframes indeterminate {
+      0%   { margin-left: -40%; }
+      100% { margin-left: 100%; }
+    }
+    .pipeline-item-error {
+      font-size: 0.78rem;
+      color: var(--red);
+      margin-top: 0.5rem;
+    }
+
     /* ── Spinner ── */
     .spinner {
       display: inline-block;
@@ -416,6 +470,14 @@
   </section>
 
   <hr class="divider" />
+
+  <!-- Pipeline Activity Section -->
+  <section class="pipeline-section" id="pipelineSection">
+    <div class="section-header">
+      <h2>Pipeline Activity</h2>
+    </div>
+    <div id="pipelineList"></div>
+  </section>
 
   <!-- List Panel -->
   <div id="listPanel">
@@ -687,6 +749,7 @@
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
       toast(`Uploaded! Job ${data.jobId} — transcription queued.`, 'success');
+      loadPipelineStatus();
       setTimeout(() => { progressEl.style.display = 'none'; progressBar.style.width = '0%'; }, 1500);
       uploadInput.value = '';
     } catch (err) {
@@ -704,6 +767,70 @@
     } catch (err) {
       toast(`Watcher failed: ${err.message}`, 'error');
     }
+  }
+
+  // ─── Pipeline Activity Status Bars ────────────────────────────────────────
+  const ACTIVE_STAGES = {
+    transcribing: 'Transcribing',
+    segmenting:   'Analyzing transcript',
+    editing:      'Editing audio',
+    uploading:    'Uploading to Drive',
+  };
+  let prevActiveJobIds = new Set();
+
+  async function loadPipelineStatus() {
+    try {
+      const data = await apiFetch('/api/status?limit=20');
+      const jobs = data.jobs || [];
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+
+      const visible = jobs.filter(j =>
+        j.status in ACTIVE_STAGES ||
+        (j.status === 'failed' && new Date(j.updatedAt).getTime() > cutoff)
+      );
+
+      const section = document.getElementById('pipelineSection');
+      const list = document.getElementById('pipelineList');
+
+      if (visible.length === 0) {
+        section.classList.remove('active');
+        list.innerHTML = '';
+      } else {
+        section.classList.add('active');
+        list.innerHTML = visible.map(job => {
+          const filename = escapeHtml(job.sourceFile.split(/[\\/]/).pop());
+          if (job.status === 'failed') {
+            return `
+              <div class="pipeline-item">
+                <div class="pipeline-item-header">
+                  <span class="pipeline-item-name">${filename}</span>
+                  <span class="pipeline-item-stage failed">✕ Failed</span>
+                </div>
+                <div class="status-bar"><div class="status-bar-fill failed"></div></div>
+                ${job.error ? `<div class="pipeline-item-error">${escapeHtml(job.error)}</div>` : ''}
+              </div>`;
+          }
+          const stage = ACTIVE_STAGES[job.status];
+          const pct = job.status === 'transcribing' ? Math.min(job.progress || 0, 100) : null;
+          return `
+            <div class="pipeline-item">
+              <div class="pipeline-item-header">
+                <span class="pipeline-item-name">${filename}</span>
+                <span class="pipeline-item-stage"><span class="spinner"></span> ${stage}${pct !== null ? ` — ${pct}%` : '…'}</span>
+              </div>
+              <div class="status-bar">
+                <div class="status-bar-fill ${pct === null ? 'indeterminate' : ''}" ${pct !== null ? `style="width:${pct}%"` : ''}></div>
+              </div>
+            </div>`;
+        }).join('');
+      }
+
+      // Refresh pending list when a job finishes processing
+      const activeIds = new Set(jobs.filter(j => j.status in ACTIVE_STAGES).map(j => j.jobId));
+      const finished = [...prevActiveJobIds].some(id => !activeIds.has(id));
+      prevActiveJobIds = activeIds;
+      if (finished) loadPendingJobs();
+    } catch { /* keep last state on transient errors */ }
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -731,6 +858,8 @@
 
   // ─── Init ─────────────────────────────────────────────────────────────────
   loadPendingJobs();
+  loadPipelineStatus();
+  setInterval(loadPipelineStatus, 3000);
 </script>
 </body>
 </html>
