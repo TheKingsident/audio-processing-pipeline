@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Church Audio Pipeline — Review</title>
+  <title>Church Audio Pipeline</title>
   <meta name="description" content="Human review interface for the Church Audio Processing Pipeline. Inspect AI-proposed cuts, approve or reject segmentation decisions before audio editing begins." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -11,315 +11,624 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg-base:       #0d1117;
-      --bg-surface:    #161b22;
-      --bg-card:       #1c2230;
-      --bg-hover:      #21273a;
-      --border:        #30363d;
-      --border-bright: #484f58;
-      --text-primary:  #e6edf3;
-      --text-secondary:#8b949e;
-      --text-muted:    #6e7681;
-      --accent:        #58a6ff;
-      --accent-glow:   rgba(88,166,255,0.15);
-      --green:         #3fb950;
-      --green-bg:      rgba(63,185,80,0.1);
-      --red:           #f85149;
-      --red-bg:        rgba(248,81,73,0.1);
-      --yellow:        #d29922;
-      --yellow-bg:     rgba(210,153,34,0.1);
-      --purple:        #bc8cff;
-      --prayer-color:  #58a6ff;
-      --sermon-color:  #3fb950;
-      --cut-color:     #f85149;
+      --bg:            #f4f5f7;
+      --surface:       #ffffff;
+      --surface-2:     #f9fafb;
+      --hover:         #f3f4f6;
+      --border:        #e5e7eb;
+      --border-strong: #d1d5db;
+      --text:          #111827;
+      --text-2:        #6b7280;
+      --text-3:        #9ca3af;
+      --accent:        #4f46e5;
+      --accent-hover:  #4338ca;
+      --accent-soft:   #eef2ff;
+      --accent-border: #c7d2fe;
+      --green:         #16a34a;
+      --green-soft:    #f0fdf4;
+      --green-border:  #bbf7d0;
+      --red:           #dc2626;
+      --red-soft:      #fef2f2;
+      --red-border:    #fecaca;
+      --amber:         #d97706;
+      --amber-soft:    #fffbeb;
+      --amber-border:  #fde68a;
+      --blue:          #2563eb;
+      --blue-soft:     #eff6ff;
+      --blue-border:   #bfdbfe;
+      --prayer:        #2563eb;
+      --sermon:        #16a34a;
+      --cut:           #dc2626;
       --radius:        10px;
-      --shadow:        0 4px 32px rgba(0,0,0,0.5);
+      --radius-sm:     7px;
+      --shadow:        0 1px 2px rgba(16,24,40,0.05);
+      --shadow-lg:     0 8px 24px rgba(16,24,40,0.10);
+    }
+    [data-theme="dark"] {
+      --bg:            #0e1013;
+      --surface:       #16181d;
+      --surface-2:     #1b1e24;
+      --hover:         #1f2229;
+      --border:        #272b33;
+      --border-strong: #3a3f4a;
+      --text:          #e8eaef;
+      --text-2:        #9aa1ad;
+      --text-3:        #626975;
+      --accent:        #818cf8;
+      --accent-hover:  #a5b4fc;
+      --accent-soft:   rgba(129,140,248,0.12);
+      --accent-border: rgba(129,140,248,0.35);
+      --green:         #4ade80;
+      --green-soft:    rgba(74,222,128,0.08);
+      --green-border:  rgba(74,222,128,0.3);
+      --red:           #f87171;
+      --red-soft:      rgba(248,113,113,0.08);
+      --red-border:    rgba(248,113,113,0.3);
+      --amber:         #fbbf24;
+      --amber-soft:    rgba(251,191,36,0.08);
+      --amber-border:  rgba(251,191,36,0.3);
+      --blue:          #60a5fa;
+      --blue-soft:     rgba(96,165,250,0.08);
+      --blue-border:   rgba(96,165,250,0.3);
+      --prayer:        #60a5fa;
+      --sermon:        #4ade80;
+      --cut:           #f87171;
+      --shadow:        0 1px 2px rgba(0,0,0,0.3);
+      --shadow-lg:     0 8px 24px rgba(0,0,0,0.45);
     }
 
     html { scroll-behavior: smooth; }
     body {
       font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg-base);
-      color: var(--text-primary);
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      line-height: 1.6;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
     }
+    svg.icon { width: 16px; height: 16px; flex-shrink: 0; }
 
-    /* ── Header ── */
-    header {
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 2rem;
+    /* ── App Shell ── */
+    .app { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 232px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
       position: sticky;
       top: 0;
-      z-index: 100;
-      backdrop-filter: blur(12px);
+      height: 100vh;
     }
-    .header-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .logo {
+    .sidebar-logo {
       display: flex;
       align-items: center;
       gap: 10px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
       font-weight: 700;
-      font-size: 1.05rem;
-      color: var(--text-primary);
+      font-size: 0.95rem;
+      letter-spacing: -0.01em;
     }
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, #58a6ff, #bc8cff);
+    .logo-mark {
+      width: 30px;
+      height: 30px;
       border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
     }
-    .header-actions { display: flex; gap: 10px; }
+    .logo-mark svg { width: 16px; height: 16px; }
+    .sidebar-nav { padding: 14px 12px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .nav-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-3);
+      padding: 10px 10px 6px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-2);
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-item:hover { background: var(--hover); color: var(--text); transform: none; box-shadow: none; }
+    .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    .nav-count {
+      margin-left: auto;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      padding: 1px 7px;
+      min-width: 20px;
+      text-align: center;
+    }
+    .nav-count:empty { display: none; }
+    .sidebar-footer {
+      padding: 14px 12px;
+      border-top: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--text-3);
+    }
+
+    /* ── Main column ── */
+    .main-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: 60px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar-title { font-size: 0.95rem; font-weight: 600; }
+    .topbar-actions { display: flex; align-items: center; gap: 8px; }
 
     /* ── Buttons ── */
     button {
       font-family: inherit;
       cursor: pointer;
       border: none;
-      border-radius: 6px;
-      font-size: 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.83rem;
       font-weight: 500;
-      padding: 7px 14px;
-      transition: all 0.18s ease;
+      padding: 7px 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 0.14s, border-color 0.14s, color 0.14s, box-shadow 0.14s;
     }
-    .btn-primary   { background: var(--accent); color: #0d1117; }
-    .btn-primary:hover { background: #79baff; transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-glow); }
-    .btn-ghost     { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
-    .btn-ghost:hover { border-color: var(--border-bright); color: var(--text-primary); background: var(--bg-hover); }
-    .btn-danger    { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
-    .btn-danger:hover { background: rgba(248,81,73,0.2); transform: translateY(-1px); }
-    .btn-success   { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
-    .btn-success:hover { background: rgba(63,185,80,0.2); transform: translateY(-1px); }
-    .btn-sm { padding: 4px 10px; font-size: 0.78rem; }
-    button:disabled { opacity: 0.4; pointer-events: none; }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: var(--shadow); }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-outline { background: var(--surface); color: var(--text-2); border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .btn-outline:hover { color: var(--text); border-color: var(--border-strong); background: var(--hover); }
+    .btn-danger { background: var(--surface); color: var(--red); border: 1px solid var(--red-border); }
+    .btn-danger:hover { background: var(--red-soft); }
+    .btn-success { background: var(--green); color: #fff; border: 1px solid transparent; }
+    .btn-success:hover { filter: brightness(1.08); }
+    .btn-icon { padding: 7px; background: var(--surface); border: 1px solid var(--border); color: var(--text-2); box-shadow: var(--shadow); }
+    .btn-icon:hover { color: var(--text); border-color: var(--border-strong); }
+    .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+    button:disabled { opacity: 0.5; pointer-events: none; }
 
-    /* ── Main Layout ── */
-    main {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
+    /* ── Content ── */
+    .content { padding: 28px; max-width: 1060px; width: 100%; margin: 0 auto; }
+    .view { display: none; }
+    .view.active { display: block; animation: fadeIn 0.18s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
-    /* ── Section Header ── */
-    .section-header {
+    .view-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1.5rem;
+      margin-bottom: 20px;
+      gap: 1rem;
     }
-    h1 { font-size: 1.5rem; font-weight: 700; }
-    h2 { font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
-    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+    .view-header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+    .view-header .sub { font-size: 0.85rem; color: var(--text-2); margin-top: 2px; }
+    h3.section-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin: 26px 0 12px;
+    }
 
-    /* ── Status Badge ── */
-    .badge {
+    /* ── Stat cards ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .stat-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .stat-icon svg { width: 18px; height: 18px; }
+    .stat-icon.accent { background: var(--accent-soft); color: var(--accent); }
+    .stat-icon.amber  { background: var(--amber-soft); color: var(--amber); }
+    .stat-icon.red    { background: var(--red-soft); color: var(--red); }
+    .stat-icon.green  { background: var(--green-soft); color: var(--green); }
+    .stat-value { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+    .stat-label { font-size: 0.78rem; color: var(--text-2); font-weight: 500; }
+
+    /* ── Cards / list rows ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .list-card { overflow: hidden; }
+    .list-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .list-row:last-child { border-bottom: none; }
+    .list-row:hover { background: var(--hover); }
+    .file-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .file-icon svg { width: 17px; height: 17px; }
+    .row-main { flex: 1; min-width: 0; }
+    .row-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .row-meta { font-size: 0.78rem; color: var(--text-3); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+    .row-side { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .cut-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .chip {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 20px;
       display: inline-flex;
       align-items: center;
       gap: 5px;
+      text-transform: capitalize;
+    }
+    .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .chip-prayer { background: var(--blue-soft); color: var(--prayer); border: 1px solid var(--blue-border); }
+    .chip-sermon { background: var(--green-soft); color: var(--sermon); border: 1px solid var(--green-border); }
+    .chip-cut    { background: var(--red-soft); color: var(--cut); border: 1px solid var(--red-border); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       padding: 3px 10px;
       border-radius: 20px;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
     }
-    .badge-awaiting { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
-    .badge-no-split { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(88,166,255,0.3); }
-    .badge-approved { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
-    .badge-rejected { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
-    .badge-failed   { background: rgba(248,81,73,0.05); color: #a8505b; border: 1px solid rgba(248,81,73,0.2); }
+    .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .badge-awaiting { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-border); }
+    .badge-trim     { background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue-border); }
+    .badge-failed   { background: var(--red-soft); color: var(--red); border: 1px solid var(--red-border); }
+    .badge-active   { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-border); }
 
-    /* ── Cards ── */
-    .card {
-      background: var(--bg-card);
+    /* ── Pipeline items ── */
+    .pipeline-item {
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 1.5rem;
-      transition: border-color 0.2s;
+      padding: 15px 18px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
     }
-    .card:hover { border-color: var(--border-bright); }
-    .job-card {
+    .pipeline-item-header {
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
       gap: 1rem;
-      margin-bottom: 1.25rem;
-      cursor: pointer;
+      margin-bottom: 10px;
     }
-    .job-card-header {
+    .pipeline-item-name {
+      font-weight: 600;
+      font-size: 0.88rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pipeline-item-stage {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+    .pipeline-item-stage.failed { color: var(--red); }
+    .status-bar { background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; height: 6px; overflow: hidden; }
+    .status-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s ease; border-radius: 20px; }
+    .status-bar-fill.indeterminate { width: 40%; animation: indeterminate 1.4s ease-in-out infinite; }
+    .status-bar-fill.failed { background: var(--red); width: 100%; animation: none; }
+    @keyframes indeterminate { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+
+    .error-summary {
+      margin-top: 10px;
+      background: var(--red-soft);
+      border: 1px solid var(--red-border);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      font-size: 0.79rem;
+      color: var(--red);
+    }
+    .error-toggle {
+      background: none;
+      border: none;
+      padding: 0;
+      margin-top: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--red);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      opacity: 0.8;
+    }
+    .error-toggle:hover { opacity: 1; }
+    .error-toggle svg { transition: transform 0.15s; }
+    .error-toggle.open svg { transform: rotate(180deg); }
+    .error-detail {
+      display: none;
+      margin-top: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      line-height: 1.6;
+      color: var(--text-2);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .error-detail.open { display: block; }
+
+    /* ── Upload ── */
+    .upload-zone {
+      border: 1.5px dashed var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      padding: 56px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--accent-soft); }
+    .upload-icon-wrap {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 14px;
+      border-radius: 13px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .upload-icon-wrap svg { width: 24px; height: 24px; }
+    .upload-zone strong { font-size: 0.95rem; font-weight: 600; }
+    .upload-zone p { color: var(--text-2); margin-top: 6px; font-size: 0.83rem; }
+    #upload-input { display: none; }
+    .upload-progress {
+      display: none;
+      margin-top: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .upload-progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 56px 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .empty-icon {
+      width: 46px;
+      height: 46px;
+      margin: 0 auto 14px;
+      border-radius: 12px;
+      background: var(--green-soft);
+      color: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .empty-icon svg { width: 22px; height: 22px; }
+    .empty-state h2 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+    .empty-state p { font-size: 0.85rem; color: var(--text-2); }
+
+    /* ── Detail view ── */
+    .back-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text-2);
+      font-size: 0.83rem;
+      font-weight: 500;
+      margin-bottom: 18px;
+      gap: 6px;
+    }
+    .back-btn:hover { color: var(--text); }
+    .detail-head {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 1rem;
-    }
-    .job-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
-
-    /* ── Empty State ── */
-    .empty-state {
-      text-align: center;
-      padding: 5rem 2rem;
-      color: var(--text-secondary);
-    }
-    .empty-state .emoji { font-size: 3rem; margin-bottom: 1rem; }
-    .empty-state h2 { color: var(--text-primary); margin-bottom: 0.5rem; }
-
-    /* ── Detail Panel ── */
-    .detail-panel { display: none; }
-    .detail-panel.active { display: block; }
-    .back-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: none;
-      border: none;
-      padding: 0;
-      color: var(--text-secondary);
-      font-size: 0.85rem;
-      margin-bottom: 1.5rem;
-      cursor: pointer;
-      transition: color 0.15s;
-    }
-    .back-btn:hover { color: var(--text-primary); transform: none; }
-
-    /* ── Cuts List ── */
-    .cuts-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
-    .cut-item {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      transition: border-color 0.2s;
-    }
-    .cut-item.type-prayer { border-left: 3px solid var(--prayer-color); }
-    .cut-item.type-sermon { border-left: 3px solid var(--sermon-color); }
-    .cut-item.type-cut    { border-left: 3px solid var(--cut-color); }
-    .cut-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.9rem 1.1rem;
-      background: var(--bg-surface);
-      gap: 1rem;
-    }
-    .cut-type-prayer { color: var(--prayer-color); }
-    .cut-type-sermon { color: var(--sermon-color); }
-    .cut-type-cut    { color: var(--cut-color); }
-    .cut-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-    .cut-icon { font-size: 1rem; }
-    .cut-times {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.78rem;
-      color: var(--text-secondary);
-      background: var(--bg-card);
-      padding: 3px 8px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-    }
-    .cut-body { padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.75rem; }
-    .reason-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
-    .reason-text { font-size: 0.88rem; color: var(--text-primary); }
-    .context-box {
-      background: var(--bg-base);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.75rem 1rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.78rem;
-      color: var(--text-secondary);
-      line-height: 1.7;
-      max-height: 120px;
-      overflow-y: auto;
-    }
-    .cut-edit-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
       flex-wrap: wrap;
+      margin-bottom: 18px;
     }
-    .cut-edit-row label { font-size: 0.78rem; color: var(--text-muted); }
-    .cut-edit-row input {
-      background: var(--bg-base);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      color: var(--text-primary);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      padding: 5px 10px;
-      width: 90px;
-      transition: border-color 0.2s;
-    }
-    .cut-edit-row input:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-    .cut-edit-row select {
-      background: var(--bg-base);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      color: var(--text-primary);
-      font-family: inherit;
-      font-size: 0.83rem;
-      padding: 5px 10px;
-      cursor: pointer;
-    }
+    .detail-head h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; word-break: break-all; }
+    .detail-meta { font-size: 0.78rem; color: var(--text-3); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
 
-    /* ── Review Actions ── */
-    .review-actions {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid var(--border);
-      flex-wrap: wrap;
-    }
-    .review-actions p {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      flex: 1 1 200px;
-    }
-
-    /* ── No-Split Notice ── */
+    /* ── Notices ── */
     .notice {
       display: flex;
       align-items: flex-start;
       gap: 10px;
-      padding: 1rem 1.25rem;
-      border-radius: 8px;
-      font-size: 0.88rem;
-      margin-bottom: 1.25rem;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      margin-bottom: 16px;
     }
-    .notice-info { background: var(--accent-glow); border: 1px solid rgba(88,166,255,0.3); color: var(--accent); }
-    .notice-warn { background: var(--yellow-bg); border: 1px solid rgba(210,153,34,0.3); color: var(--yellow); }
+    .notice svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+    .notice-info { background: var(--blue-soft); border: 1px solid var(--blue-border); color: var(--blue); }
+    .notice-warn { background: var(--amber-soft); border: 1px solid var(--amber-border); color: var(--amber); }
+
+    /* ── Cuts ── */
+    .cuts-card { padding: 20px 22px; margin-bottom: 18px; }
+    .cuts-list { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+    .cut-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .cut-item.type-prayer { border-left: 3px solid var(--prayer); }
+    .cut-item.type-sermon { border-left: 3px solid var(--sermon); }
+    .cut-item.type-cut    { border-left: 3px solid var(--cut); }
+    .cut-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      gap: 1rem;
+    }
+    .cut-label { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.86rem; text-transform: capitalize; }
+    .cut-label .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .cut-type-prayer { color: var(--prayer); } .cut-type-prayer .dot { background: var(--prayer); }
+    .cut-type-sermon { color: var(--sermon); } .cut-type-sermon .dot { background: var(--sermon); }
+    .cut-type-cut    { color: var(--cut); }    .cut-type-cut .dot { background: var(--cut); }
+    .cut-times {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-2);
+      background: var(--surface);
+      padding: 3px 9px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+    }
+    .cut-body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+    .reason-label { font-size: 0.68rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+    .reason-text { font-size: 0.86rem; }
+    .context-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 13px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-2);
+      line-height: 1.65;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .cut-edit-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .cut-edit-row label { font-size: 0.76rem; color: var(--text-3); font-weight: 500; }
+    .cut-edit-row input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      padding: 5px 10px;
+      width: 88px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .cut-edit-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .cut-edit-row select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.82rem;
+      padding: 5px 9px;
+      cursor: pointer;
+    }
+
+    /* ── Review actions ── */
+    .review-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 22px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+    }
+    .review-actions p { font-size: 0.81rem; color: var(--text-3); flex: 1 1 220px; }
 
     /* ── Toast ── */
-    #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
+    #toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; }
     .toast {
-      background: var(--bg-surface);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.9rem 1.25rem;
-      font-size: 0.88rem;
-      box-shadow: var(--shadow);
+      border-radius: var(--radius-sm);
+      padding: 11px 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
       animation: slideIn 0.2s ease, fadeOut 0.3s ease 2.8s forwards;
-      max-width: 320px;
+      max-width: 340px;
     }
     .toast-success { border-left: 3px solid var(--green); }
     .toast-error   { border-left: 3px solid var(--red); }
@@ -327,174 +636,183 @@
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     @keyframes fadeOut { to { opacity: 0; transform: translateX(100%); } }
 
-    /* ── Upload Zone ── */
-    .upload-section { margin-bottom: 2.5rem; }
-    .upload-zone {
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 2.5rem;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .upload-zone:hover, .upload-zone.dragover {
-      border-color: var(--accent);
-      background: var(--accent-glow);
-    }
-    .upload-zone p { color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.88rem; }
-    .upload-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    #upload-input { display: none; }
-    .upload-progress {
-      display: none;
-      margin-top: 1rem;
-      background: var(--bg-surface);
-      border-radius: 4px;
-      height: 4px;
-      overflow: hidden;
-    }
-    .upload-progress-bar {
-      height: 100%;
-      background: var(--accent);
-      width: 0%;
-      transition: width 0.3s ease;
-    }
-
-    /* ── Pipeline Activity Status Bars ── */
-    .pipeline-section { margin-bottom: 2.5rem; display: none; }
-    .pipeline-section.active { display: block; }
-    .pipeline-item {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1rem 1.25rem;
-      margin-bottom: 0.75rem;
-    }
-    .pipeline-item-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 0.6rem;
-    }
-    .pipeline-item-name { font-weight: 600; font-size: 0.9rem; }
-    .pipeline-item-stage {
-      font-size: 0.78rem;
-      color: var(--accent);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-    }
-    .pipeline-item-stage.failed { color: var(--red); }
-    .status-bar {
-      background: var(--bg-surface);
-      border-radius: 4px;
-      height: 6px;
-      overflow: hidden;
-    }
-    .status-bar-fill {
-      height: 100%;
-      background: var(--accent);
-      width: 0%;
-      transition: width 0.4s ease;
-    }
-    .status-bar-fill.indeterminate {
-      width: 40%;
-      animation: indeterminate 1.4s ease-in-out infinite;
-    }
-    .status-bar-fill.failed { background: var(--red); width: 100%; animation: none; }
-    @keyframes indeterminate {
-      0%   { margin-left: -40%; }
-      100% { margin-left: 100%; }
-    }
-    .pipeline-item-error {
-      font-size: 0.78rem;
-      color: var(--red);
-      margin-top: 0.5rem;
-    }
-
     /* ── Spinner ── */
     .spinner {
       display: inline-block;
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255,255,255,0.2);
-      border-top-color: var(--text-primary);
+      width: 13px;
+      height: 13px;
+      border: 2px solid var(--border-strong);
+      border-top-color: var(--accent);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Divider ── */
-    .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+    .loading-row { color: var(--text-3); padding: 32px 18px; display: flex; align-items: center; gap: 10px; font-size: 0.86rem; }
 
     /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .sidebar { width: 64px; }
+      .sidebar-logo span, .nav-item span.nav-text, .nav-label, .sidebar-footer, .nav-count { display: none; }
+      .nav-item { justify-content: center; padding: 10px; }
+      .sidebar-logo { justify-content: center; padding: 18px 0; }
+      .content { padding: 18px; }
+    }
     @media (max-width: 640px) {
-      main { padding: 1rem; }
-      .review-actions { flex-direction: column; }
+      .review-actions { flex-direction: column; align-items: stretch; }
       .cut-header { flex-direction: column; align-items: flex-start; }
+      .topbar-title { display: none; }
     }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="header-inner">
-    <div class="logo">
-      <div class="logo-icon">🎙</div>
-      Church Audio Pipeline
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg>
+      </div>
+      <span>Church Audio<br/>Pipeline</span>
     </div>
-    <div class="header-actions">
-      <button class="btn-ghost btn-sm" onclick="triggerManualCheck()">🔄 Trigger Watcher</button>
-      <button class="btn-primary btn-sm" onclick="uploadSection.scrollIntoView({behavior:'smooth'})">+ Upload</button>
-    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Workspace</div>
+      <button class="nav-item active" data-view="overview" onclick="showView('overview')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        <span class="nav-text">Overview</span>
+      </button>
+      <button class="nav-item" data-view="review" onclick="showView('review')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
+        <span class="nav-text">Review Queue</span>
+        <span class="nav-count" id="navPendingCount"></span>
+      </button>
+      <button class="nav-item" data-view="upload" onclick="showView('upload')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M12 12v9"/><path d="m8 17 4-4 4 4"/></svg>
+        <span class="nav-text">Upload</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">Audio Processing Pipeline</div>
+  </aside>
+
+  <!-- Main column -->
+  <div class="main-col">
+
+    <header class="topbar">
+      <div class="topbar-title" id="topbarTitle">Overview</div>
+      <div class="topbar-actions">
+        <button class="btn-outline btn-sm" onclick="triggerManualCheck()">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          Trigger Watcher
+        </button>
+        <button class="btn-icon" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">
+          <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
+        <button class="btn-primary btn-sm" onclick="showView('upload')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Upload
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ── Overview ── -->
+      <section class="view active" id="view-overview">
+        <div class="view-header">
+          <div>
+            <h1>Overview</h1>
+            <div class="sub">Pipeline status at a glance</div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            </div>
+            <div><div class="stat-value" id="statPending">0</div><div class="stat-label">Pending review</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon accent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+            </div>
+            <div><div class="stat-value" id="statProcessing">0</div><div class="stat-label">Processing</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+            </div>
+            <div><div class="stat-value" id="statFailed">0</div><div class="stat-label">Failed (24 h)</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <div><div class="stat-value" id="statCompleted">0</div><div class="stat-label">Completed (24 h)</div></div>
+          </div>
+        </div>
+
+        <h3 class="section-label" id="pipelineLabel" style="display:none">Pipeline Activity</h3>
+        <div id="pipelineList"></div>
+        <div id="pipelineEmpty" class="empty-state">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <h2>All quiet</h2>
+          <p>No active or recently failed jobs. Upload an audio file to get started.</p>
+        </div>
+      </section>
+
+      <!-- ── Review Queue ── -->
+      <section class="view" id="view-review">
+        <div id="reviewList">
+          <div class="view-header">
+            <div>
+              <h1>Review Queue</h1>
+              <div class="sub">Approve or reject AI-proposed cuts before editing</div>
+            </div>
+            <button class="btn-outline btn-sm" onclick="loadPendingJobs()">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+              Refresh
+            </button>
+          </div>
+          <div id="jobsList"></div>
+        </div>
+
+        <div id="reviewDetail" style="display:none">
+          <button class="back-btn" onclick="backToList()">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            Back to queue
+          </button>
+          <div id="detailContent"></div>
+        </div>
+      </section>
+
+      <!-- ── Upload ── -->
+      <section class="view" id="view-upload">
+        <div class="view-header">
+          <div>
+            <h1>Upload Audio</h1>
+            <div class="sub">Add a service recording to the processing pipeline</div>
+          </div>
+        </div>
+        <div class="upload-zone" id="uploadZone">
+          <div class="upload-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <strong>Drop an audio file here, or click to browse</strong>
+          <p>MP3, WAV, M4A, OGG &nbsp;·&nbsp; up to 500 MB</p>
+          <input type="file" id="upload-input" accept="audio/*" />
+        </div>
+        <div class="upload-progress" id="uploadProgress">
+          <div class="upload-progress-bar" id="uploadProgressBar"></div>
+        </div>
+      </section>
+
+    </main>
   </div>
-</header>
-
-<main>
-
-  <!-- Upload Section -->
-  <section class="upload-section" id="uploadSection">
-    <div class="section-header">
-      <h2>Upload Audio File</h2>
-    </div>
-    <div class="upload-zone" id="uploadZone">
-      <div class="upload-icon">🎵</div>
-      <strong>Drop audio file here or click to browse</strong>
-      <p>Supported: MP3, WAV, M4A, OGG &nbsp;·&nbsp; Max 500 MB</p>
-      <input type="file" id="upload-input" accept="audio/*" />
-    </div>
-    <div class="upload-progress" id="uploadProgress">
-      <div class="upload-progress-bar" id="uploadProgressBar"></div>
-    </div>
-  </section>
-
-  <hr class="divider" />
-
-  <!-- Pipeline Activity Section -->
-  <section class="pipeline-section" id="pipelineSection">
-    <div class="section-header">
-      <h2>Pipeline Activity</h2>
-    </div>
-    <div id="pipelineList"></div>
-  </section>
-
-  <!-- List Panel -->
-  <div id="listPanel">
-    <div class="section-header">
-      <h2>Pending Review <span id="pendingCount" style="color:var(--text-muted);font-weight:400"></span></h2>
-      <button class="btn-ghost btn-sm" onclick="loadPendingJobs()">↻ Refresh</button>
-    </div>
-    <div id="jobsList"></div>
-  </div>
-
-  <!-- Detail Panel -->
-  <div id="detailPanel" class="detail-panel">
-    <button class="back-btn" onclick="showListPanel()">← Back to pending jobs</button>
-    <div id="detailContent"></div>
-  </div>
-
-</main>
+</div>
 
 <div id="toast-container"></div>
 
@@ -502,6 +820,29 @@
   // ─── State ───────────────────────────────────────────────────────────────
   let currentJob = null;
   let editedCuts = [];
+
+  // ─── Theme ───────────────────────────────────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('cap-theme', theme);
+  }
+  function toggleTheme() {
+    const cur = document.documentElement.getAttribute('data-theme');
+    applyTheme(cur === 'dark' ? 'light' : 'dark');
+  }
+  applyTheme(localStorage.getItem('cap-theme') ||
+    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+
+  // ─── View switching ──────────────────────────────────────────────────────
+  const VIEW_TITLES = { overview: 'Overview', review: 'Review Queue', upload: 'Upload' };
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n =>
+      n.classList.toggle('active', n.dataset.view === name));
+    document.getElementById('topbarTitle').textContent = VIEW_TITLES[name] || '';
+    if (name === 'review') backToList(false);
+  }
 
   // ─── Toast ───────────────────────────────────────────────────────────────
   function toast(msg, type = 'info') {
@@ -523,58 +864,70 @@
     return data;
   }
 
-  // ─── List Panel ──────────────────────────────────────────────────────────
+  // ─── Review list ─────────────────────────────────────────────────────────
   async function loadPendingJobs() {
     const list = document.getElementById('jobsList');
-    list.innerHTML = '<div style="color:var(--text-muted);padding:2rem 0">Loading… <span class="spinner"></span></div>';
+    list.innerHTML = '<div class="card loading-row"><span class="spinner"></span> Loading jobs…</div>';
     try {
       const data = await apiFetch('/api/review/pending');
       const jobs = data.jobs || [];
-      document.getElementById('pendingCount').textContent = jobs.length > 0 ? `(${jobs.length})` : '';
+      document.getElementById('navPendingCount').textContent = jobs.length || '';
+      document.getElementById('statPending').textContent = jobs.length;
 
       if (jobs.length === 0) {
         list.innerHTML = `
           <div class="empty-state">
-            <div class="emoji">✅</div>
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
             <h2>No jobs awaiting review</h2>
             <p>Upload an audio file or wait for the scheduled Drive watcher to pick one up.</p>
           </div>`;
         return;
       }
 
-      list.innerHTML = jobs.map(job => `
-        <div class="card job-card" onclick="openJob('${job.jobId}')">
-          <div class="job-card-header">
-            <div>
-              <span style="font-weight:600;font-size:0.95rem">${escapeHtml(job.sourceFile.split(/[\\/]/).pop())}</span>
-              <div class="job-meta">Job ID: ${job.jobId} &nbsp;·&nbsp; ${formatDate(job.updatedAt)}</div>
+      list.innerHTML = `<div class="card list-card">` + jobs.map(job => {
+        const awaiting = job.status === 'awaiting_review';
+        return `
+        <div class="list-row" onclick="openJob('${job.jobId}')">
+          <div class="file-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <div class="row-main">
+            <div class="row-title">${escapeHtml(job.sourceFile.split(/[\\/]/).pop())}</div>
+            <div class="row-meta">${job.jobId} · ${formatDate(job.updatedAt)}</div>
+            <div class="cut-chips">
+              ${(job.proposedCuts || []).map(c => `
+                <span class="chip chip-${c.type}"><span class="dot"></span>${c.type}</span>`).join('')}
             </div>
-            <span class="badge ${job.status === 'awaiting_review' ? 'badge-awaiting' : 'badge-no-split'}">
-              ${job.status === 'awaiting_review' ? '⏳ Awaiting Review' : '📄 Trim Only'}
-            </span>
-          </div>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-            ${(job.proposedCuts || []).map(c => `
-              <span style="font-size:0.78rem;padding:2px 8px;border-radius:12px;background:${cutBg(c.type)};color:${cutColor(c.type)}">
-                ${cutEmoji(c.type)} ${c.type}
-              </span>`).join('')}
-          </div>
-          ${job.status === 'no_split_needed' ? `
-            <div class="notice notice-info" style="margin:0">
-              ℹ️ No prayer/sermon boundary detected — showing trim-only cuts.
+            ${!awaiting ? `
+            <div class="notice notice-info" style="margin:10px 0 0;padding:8px 12px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+              No prayer/sermon boundary detected — showing trim-only cuts.
             </div>` : ''}
-        </div>`).join('');
+          </div>
+          <div class="row-side">
+            <span class="badge ${awaiting ? 'badge-awaiting' : 'badge-trim'}">
+              <span class="dot"></span>${awaiting ? 'Awaiting review' : 'Trim only'}
+            </span>
+            <svg class="icon" style="color:var(--text-3)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+        </div>`;
+      }).join('') + `</div>`;
     } catch (err) {
-      list.innerHTML = `<div class="notice notice-warn" style="margin:0">⚠️ Failed to load jobs: ${escapeHtml(err.message)}</div>`;
+      list.innerHTML = `<div class="notice notice-warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+        Failed to load jobs: ${escapeHtml(err.message)}
+      </div>`;
     }
   }
 
-  // ─── Open Job Detail ──────────────────────────────────────────────────────
+  // ─── Job detail ──────────────────────────────────────────────────────────
   async function openJob(jobId) {
-    document.getElementById('listPanel').style.display = 'none';
-    const panel = document.getElementById('detailPanel');
-    panel.classList.add('active');
-    document.getElementById('detailContent').innerHTML = '<div style="color:var(--text-muted);padding:2rem 0">Loading… <span class="spinner"></span></div>';
+    document.getElementById('reviewList').style.display = 'none';
+    const detail = document.getElementById('reviewDetail');
+    detail.style.display = 'block';
+    document.getElementById('detailContent').innerHTML = '<div class="card loading-row"><span class="spinner"></span> Loading job…</div>';
 
     try {
       const data = await apiFetch(`/api/review/${jobId}`);
@@ -582,19 +935,18 @@
       editedCuts = JSON.parse(JSON.stringify(currentJob.proposedCuts || []));
       renderDetail();
     } catch (err) {
-      document.getElementById('detailContent').innerHTML = `<div class="notice notice-warn">⚠️ ${escapeHtml(err.message)}</div>`;
+      document.getElementById('detailContent').innerHTML = `<div class="notice notice-warn">${escapeHtml(err.message)}</div>`;
     }
   }
 
-  function showListPanel() {
-    document.getElementById('detailPanel').classList.remove('active');
-    document.getElementById('listPanel').style.display = '';
+  function backToList(refresh = true) {
+    document.getElementById('reviewDetail').style.display = 'none';
+    document.getElementById('reviewList').style.display = '';
     currentJob = null;
     editedCuts = [];
-    loadPendingJobs();
+    if (refresh) loadPendingJobs();
   }
 
-  // ─── Render Detail ────────────────────────────────────────────────────────
   function renderDetail() {
     const job = currentJob;
     const filename = job.sourceFile.split(/[\\/]/).pop();
@@ -604,8 +956,8 @@
       <div class="cut-item type-${cut.type}" id="cut-${i}">
         <div class="cut-header">
           <div class="cut-label cut-type-${cut.type}">
-            <span class="cut-icon">${cutEmoji(cut.type)}</span>
-            <span style="text-transform:capitalize">${cut.type}</span>
+            <span class="dot"></span>
+            <span>${cut.type}</span>
           </div>
           <span class="cut-times">${formatTime(cut.start)} → ${formatTime(cut.end)}</span>
         </div>
@@ -616,11 +968,11 @@
           </div>
           ${cut.context ? `
           <div>
-            <div class="reason-label">Transcript Context (±5 s)</div>
+            <div class="reason-label">Transcript context (±5 s)</div>
             <div class="context-box">${escapeHtml(cut.context)}</div>
           </div>` : ''}
           <div>
-            <div class="reason-label">Edit Timestamps or Type</div>
+            <div class="reason-label">Edit timestamps or type</div>
             <div class="cut-edit-row">
               <label>Start (s)</label>
               <input type="number" step="0.01" value="${cut.start}" oninput="updateCut(${i},'start',this.value)" />
@@ -638,30 +990,37 @@
       </div>`).join('');
 
     document.getElementById('detailContent').innerHTML = `
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem">
+      <div class="detail-head">
         <div>
-          <h2>${escapeHtml(filename)}</h2>
-          <div class="job-meta">Job ID: ${job.jobId} &nbsp;·&nbsp; Updated ${formatDate(job.updatedAt)}</div>
+          <h1>${escapeHtml(filename)}</h1>
+          <div class="detail-meta">${job.jobId} · Updated ${formatDate(job.updatedAt)}</div>
         </div>
-        <span class="badge ${noSplit ? 'badge-no-split' : 'badge-awaiting'}">
-          ${noSplit ? '📄 Trim Only (No Boundary)' : '⏳ Awaiting Review'}
+        <span class="badge ${noSplit ? 'badge-trim' : 'badge-awaiting'}">
+          <span class="dot"></span>${noSplit ? 'Trim only (no boundary)' : 'Awaiting review'}
         </span>
       </div>
 
       ${noSplit ? `
       <div class="notice notice-info">
-        ℹ️ <strong>No prayer/sermon boundary found.</strong> This is expected on some Sundays. The LLM could not locate a clear "Turn your Bibles to…" transition. You can still approve trim cuts below, or reject the job entirely.
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+        <span><strong>No prayer/sermon boundary found.</strong> This is expected on some Sundays. The LLM could not locate a clear "Turn your Bibles to…" transition. You can still approve trim cuts below, or reject the job entirely.</span>
       </div>` : ''}
 
-      <div class="card" style="margin-bottom:1.5rem">
-        <h3 style="margin-bottom:1rem">Proposed Cuts — ${editedCuts.length} segment${editedCuts.length !== 1 ? 's' : ''}</h3>
-        ${editedCuts.length === 0 ? '<p style="color:var(--text-muted);font-size:0.88rem">No cuts proposed.</p>' : `<div class="cuts-list">${cutsHtml}</div>`}
+      <div class="card cuts-card">
+        <h3 class="section-label" style="margin:0">Proposed cuts — ${editedCuts.length} segment${editedCuts.length !== 1 ? 's' : ''}</h3>
+        ${editedCuts.length === 0 ? '<p style="color:var(--text-3);font-size:0.86rem;margin-top:12px">No cuts proposed.</p>' : `<div class="cuts-list">${cutsHtml}</div>`}
       </div>
 
       <div class="review-actions">
         <p>Approve to run FFmpeg editing with these cuts, or reject to retain the raw file untouched.</p>
-        <button class="btn-danger" onclick="rejectJob()">✕ Reject</button>
-        <button class="btn-success" id="approveBtn" onclick="approveJob()">✓ Approve & Begin Edit</button>
+        <button class="btn-danger" onclick="rejectJob()">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          Reject
+        </button>
+        <button class="btn-success" id="approveBtn" onclick="approveJob()">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Approve &amp; Begin Edit
+        </button>
       </div>
     `;
   }
@@ -674,41 +1033,45 @@
     renderDetail();
   }
 
-  // ─── Approve / Reject ─────────────────────────────────────────────────────
+  // ─── Approve / Reject ────────────────────────────────────────────────────
+  const APPROVE_LABEL = `
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    Approve &amp; Begin Edit`;
+
   async function approveJob() {
     const btn = document.getElementById('approveBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Approving…';
+    btn.innerHTML = '<span class="spinner" style="border-color:rgba(255,255,255,0.4);border-top-color:#fff"></span> Approving…';
     try {
       await apiFetch(`/api/review/${currentJob.jobId}/approve`, {
         method: 'POST',
         body: JSON.stringify({ reviewedCuts: editedCuts }),
       });
-      toast('Job approved and enqueued for editing!', 'success');
-      showListPanel();
+      toast('Job approved and enqueued for editing.', 'success');
+      backToList();
     } catch (err) {
       toast(`Approval failed: ${err.message}`, 'error');
       btn.disabled = false;
-      btn.innerHTML = '✓ Approve & Begin Edit';
+      btn.innerHTML = APPROVE_LABEL;
     }
   }
 
   async function rejectJob() {
-    const reason = prompt('Optional: Provide a reason for rejection.');
-    if (reason === null) return; // user cancelled
+    const reason = prompt('Optional: provide a reason for rejection.');
+    if (reason === null) return;
     try {
       await apiFetch(`/api/review/${currentJob.jobId}/reject`, {
         method: 'POST',
         body: JSON.stringify({ reason }),
       });
       toast('Job rejected. Raw file retained.', 'info');
-      showListPanel();
+      backToList();
     } catch (err) {
       toast(`Rejection failed: ${err.message}`, 'error');
     }
   }
 
-  // ─── Upload ───────────────────────────────────────────────────────────────
+  // ─── Upload ──────────────────────────────────────────────────────────────
   const uploadZone = document.getElementById('uploadZone');
   const uploadInput = document.getElementById('upload-input');
 
@@ -734,7 +1097,6 @@
     formData.append('audio', file);
 
     try {
-      // Animate progress bar (fake progress while uploading)
       let fakeProgress = 0;
       const tick = setInterval(() => {
         fakeProgress = Math.min(fakeProgress + Math.random() * 12, 85);
@@ -748,7 +1110,7 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
-      toast(`Uploaded! Job ${data.jobId} — transcription queued.`, 'success');
+      toast(`Uploaded — job ${data.jobId} queued for transcription.`, 'success');
       loadPipelineStatus();
       setTimeout(() => { progressEl.style.display = 'none'; progressBar.style.width = '0%'; }, 1500);
       uploadInput.value = '';
@@ -758,7 +1120,7 @@
     }
   }
 
-  // ─── Manual Watcher ───────────────────────────────────────────────────────
+  // ─── Manual watcher ──────────────────────────────────────────────────────
   async function triggerManualCheck() {
     try {
       const data = await apiFetch('/api/watcher/check', { method: 'POST' });
@@ -769,7 +1131,7 @@
     }
   }
 
-  // ─── Pipeline Activity Status Bars ────────────────────────────────────────
+  // ─── Pipeline status ─────────────────────────────────────────────────────
   const ACTIVE_STAGES = {
     transcribing: 'Transcribing',
     segmenting:   'Analyzing transcript',
@@ -778,25 +1140,56 @@
   };
   let prevActiveJobIds = new Set();
 
+  function errorBlock(error) {
+    const text = String(error);
+    const firstLine = text.split('\n').find(l => l.trim()) || 'Unknown error';
+    const summary = firstLine.length > 180 ? firstLine.slice(0, 180) + '…' : firstLine;
+    return `
+      <div class="error-summary">
+        ${escapeHtml(summary)}
+        ${text !== firstLine || firstLine.length > 180 ? `
+          <br/><button class="error-toggle" onclick="toggleError(this)">
+            View full log
+            <svg class="icon" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="error-detail">${escapeHtml(text)}</div>` : ''}
+      </div>`;
+  }
+
+  function toggleError(btn) {
+    const detail = btn.parentElement.querySelector('.error-detail');
+    const open = detail.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.firstChild.textContent = open ? 'Hide log ' : 'View full log ';
+  }
+
   async function loadPipelineStatus() {
     try {
       const data = await apiFetch('/api/status?limit=20');
       const jobs = data.jobs || [];
       const cutoff = Date.now() - 24 * 60 * 60 * 1000;
 
-      const visible = jobs.filter(j =>
-        j.status in ACTIVE_STAGES ||
-        (j.status === 'failed' && new Date(j.updatedAt).getTime() > cutoff)
-      );
+      const active = jobs.filter(j => j.status in ACTIVE_STAGES);
+      const failed = jobs.filter(j => j.status === 'failed' && new Date(j.updatedAt).getTime() > cutoff);
+      const completed = jobs.filter(j =>
+        (j.status === 'completed' || j.status === 'done') && new Date(j.updatedAt).getTime() > cutoff);
 
-      const section = document.getElementById('pipelineSection');
+      document.getElementById('statProcessing').textContent = active.length;
+      document.getElementById('statFailed').textContent = failed.length;
+      document.getElementById('statCompleted').textContent = completed.length;
+
+      const visible = [...active, ...failed];
       const list = document.getElementById('pipelineList');
+      const empty = document.getElementById('pipelineEmpty');
+      const label = document.getElementById('pipelineLabel');
 
       if (visible.length === 0) {
-        section.classList.remove('active');
         list.innerHTML = '';
+        empty.style.display = '';
+        label.style.display = 'none';
       } else {
-        section.classList.add('active');
+        empty.style.display = 'none';
+        label.style.display = '';
         list.innerHTML = visible.map(job => {
           const filename = escapeHtml(job.sourceFile.split(/[\\/]/).pop());
           if (job.status === 'failed') {
@@ -804,10 +1197,13 @@
               <div class="pipeline-item">
                 <div class="pipeline-item-header">
                   <span class="pipeline-item-name">${filename}</span>
-                  <span class="pipeline-item-stage failed">✕ Failed</span>
+                  <span class="pipeline-item-stage failed">
+                    <svg class="icon" style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    Failed
+                  </span>
                 </div>
                 <div class="status-bar"><div class="status-bar-fill failed"></div></div>
-                ${job.error ? `<div class="pipeline-item-error">${escapeHtml(job.error)}</div>` : ''}
+                ${job.error ? errorBlock(job.error) : ''}
               </div>`;
           }
           const stage = ACTIVE_STAGES[job.status];
@@ -826,7 +1222,7 @@
       }
 
       // Refresh pending list when a job finishes processing
-      const activeIds = new Set(jobs.filter(j => j.status in ACTIVE_STAGES).map(j => j.jobId));
+      const activeIds = new Set(active.map(j => j.jobId));
       const finished = [...prevActiveJobIds].some(id => !activeIds.has(id));
       prevActiveJobIds = activeIds;
       if (finished) loadPendingJobs();
@@ -846,17 +1242,8 @@
     if (!iso) return '—';
     return new Date(iso).toLocaleString();
   }
-  function cutColor(type) {
-    return type === 'prayer' ? 'var(--prayer-color)' : type === 'sermon' ? 'var(--sermon-color)' : 'var(--cut-color)';
-  }
-  function cutBg(type) {
-    return type === 'prayer' ? 'rgba(88,166,255,0.1)' : type === 'sermon' ? 'rgba(63,185,80,0.1)' : 'rgba(248,81,73,0.1)';
-  }
-  function cutEmoji(type) {
-    return type === 'prayer' ? '🙏' : type === 'sermon' ? '📖' : '✂️';
-  }
 
-  // ─── Init ─────────────────────────────────────────────────────────────────
+  // ─── Init ────────────────────────────────────────────────────────────────
   loadPendingJobs();
   loadPipelineStatus();
   setInterval(loadPipelineStatus, 3000);

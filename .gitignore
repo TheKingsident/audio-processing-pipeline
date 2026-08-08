@@ -9,3 +9,10 @@ data/*.db-wal
 *.mp3
 /credentials
 tools/ffmpeg-release-essentials.zip
+light.png
+overview-light.png
+overview-light2.png
+review.png
+.playwright-mcp/console-2026-08-08T07-24-42-351Z.log
+.playwright-mcp/page-2026-08-08T07-24-43-910Z.yml
+.playwright-mcp/page-2026-08-08T07-25-29-765Z.yml
