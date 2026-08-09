@@ -10,7 +10,11 @@ function getTranscriptContext(transcriptWords, start, end, windowSeconds = 5) {
   const contextWords = transcriptWords.filter(
     w => w.start >= start - windowSeconds && w.end <= end + windowSeconds
   );
-  return contextWords.map(w => `${w.word} [${w.start.toFixed(1)}s-${w.end.toFixed(1)}s]`).join(' ');
+  if (contextWords.length === 0) return '';
+  const contextStart = contextWords[0].start.toFixed(1);
+  const contextEnd = contextWords[contextWords.length - 1].end.toFixed(1);
+  const text = contextWords.map(w => w.word).join(' ');
+  return `[${contextStart}s-${contextEnd}s] ${text}`;
 }
 
 function enrichCutsWithContext(cuts, transcriptWords) {
