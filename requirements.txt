@@ -1,0 +1,12 @@
+# Audio Processing Pipeline - Python Dependencies
+
+# Transcription & Alignment
+whisperx
+openai-whisper
+
+# Audio decoding & FFmpeg binary wrapper
+imageio-ffmpeg
+
+# PyTorch framework
+torch
+torchaudio

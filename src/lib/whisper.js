@@ -32,9 +32,11 @@ function findFfmpegDir() {
 
   // Try imageio-ffmpeg first (pip-installable, bundles ffmpeg binary)
   try {
+    // Force UTF-8 output so non-ASCII path segments (e.g. Cyrillic Windows
+    // profile dirs) survive the trip through the console codepage.
     const ffmpegPath = execSync(
-      `"${pythonCmd}" -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())"`,
-      { encoding: 'utf-8', timeout: 10000 }
+      `"${pythonCmd}" -X utf8 -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())"`,
+      { encoding: 'utf-8', timeout: 10000, env: { ...process.env, PYTHONIOENCODING: 'utf-8' } }
     ).trim();
     if (ffmpegPath && existsSync(ffmpegPath)) {
       const dir = dirname(ffmpegPath);
@@ -78,6 +80,8 @@ export async function transcribeWithWhisperX(audioPath, onProgress) {
   const args = [
     '-m', 'whisperx',
     audioPath,
+    '--model', process.env.WHISPERX_MODEL || 'large-v3',
+    '--compute_type', process.env.WHISPERX_COMPUTE_TYPE || 'int8',
     '--output_format', 'json',
     '--output_dir', tempDir,
     '--language', 'en',
